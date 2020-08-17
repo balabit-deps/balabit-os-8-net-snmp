@@ -1,0 +1,92 @@
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Tue, 13 Aug 2019 20:54:23 -0700
+Subject: libsnmp: Move the free_securityStateRef() call into snmp_free_pdu()
+
+This patch fixes a memory leak that was introduced in commit 5f881d3bf245
+("libsnmp, USM: Introduce a reference count in struct usmStateReference").
+
+This patch partially reverts commit adc9b71aba91 ("snmpd: Avoid that snmpv3
+bulkget errors result in a double free").
+
+See also https://sourceforge.net/p/net-snmp/bugs/2938/.
+
+Author: Bart Van Assche <bvanassche@acm.org>
+Origin: backport, https://github.com/net-snmp/net-snmp/commit/87bd90d04
+Last-Update: 2020-06-17
+Bug: https://sourceforge.net/p/net-snmp/bugs/2938/
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/net-snmp/+bug/1877027
+Reviewed-By: Sergio Durigan Junior <sergio.durigan@canonical.com>
+---
+ include/net-snmp/pdu_api.h |  2 --
+ snmplib/snmp_api.c         | 24 +++---------------------
+ 2 files changed, 3 insertions(+), 23 deletions(-)
+
+diff --git a/include/net-snmp/pdu_api.h b/include/net-snmp/pdu_api.h
+index 270aff0..125595d 100644
+--- a/include/net-snmp/pdu_api.h
++++ b/include/net-snmp/pdu_api.h
+@@ -19,8 +19,6 @@ NETSNMP_IMPORT
+ netsnmp_pdu    *snmp_fix_pdu(  netsnmp_pdu *pdu, int idx);
+ NETSNMP_IMPORT
+ void            snmp_free_pdu( netsnmp_pdu *pdu);
+-NETSNMP_IMPORT
+-void            snmp_free_securityStateRef( netsnmp_pdu *pdu);
+ 
+ #ifdef __cplusplus
+ }
+diff --git a/snmplib/snmp_api.c b/snmplib/snmp_api.c
+index 046b247..0fea19e 100644
+--- a/snmplib/snmp_api.c
++++ b/snmplib/snmp_api.c
+@@ -4033,17 +4033,6 @@ free_securityStateRef(netsnmp_pdu* pdu)
+     pdu->securityStateRef = NULL;
+ }
+ 
+-/*
+- * This function is here to provide a separate call to
+- * free the securityStateRef memory. This is needed to prevent
+- * a double free if this memory is freed in snmp_free_pdu.
+- */
+-void
+-snmp_free_securityStateRef(netsnmp_pdu* pdu)
+-{
+-   free_securityStateRef(pdu);
+-}
+-
+ #define ERROR_STAT_LENGTH 11
+ 
+ int
+@@ -5493,6 +5482,9 @@ snmp_free_pdu(netsnmp_pdu *pdu)
+         return;
+     }
+      */
++
++    free_securityStateRef(pdu);
++
+     if ((sptr = find_sec_mod(pdu->securityModel)) != NULL &&
+         sptr->pdu_free != NULL) {
+         (*sptr->pdu_free) (pdu);
+@@ -5647,10 +5639,6 @@ _sess_process_packet_parse_pdu(void *sessp, netsnmp_session * sp,
+   }
+ 
+   if (ret != SNMP_ERR_NOERROR) {
+-    /*
+-     * Call the security model to free any securityStateRef supplied w/ msg.  
+-     */
+-    free_securityStateRef(pdu);
+     snmp_free_pdu(pdu);
+     return NULL;
+   }
+@@ -5822,12 +5810,6 @@ _sess_process_packet_handle_pdu(void *sessp, netsnmp_session * sp,
+     }
+   }
+ 
+-  /*
+-   * Call USM to free any securityStateRef supplied with the message.  
+-   */
+-  if (pdu->command == SNMP_MSG_TRAP2)
+-    free_securityStateRef(pdu);
+-
+   if (!handled) {
+     if (sp->flags & SNMP_FLAGS_SHARED_SOCKET)
+       return -2;

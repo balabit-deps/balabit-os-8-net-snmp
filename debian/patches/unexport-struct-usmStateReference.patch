@@ -1,0 +1,74 @@
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Tue, 23 Jul 2019 10:52:28 -0700
+Subject: libsnmp: Unexport struct usmStateReference
+
+Certain snmpd crashes can only be fixed by introducing a reference
+count in struct usmStateReference. Unexport that structure such that
+changing it does not affect the ABI.
+
+Author: Bart Van Assche <bvanassche@acm.org>
+Origin: upstream, https://github.com/net-snmp/net-snmp/commit/39381c4d2
+Last-Update: 2020-06-17
+Bug: https://sourceforge.net/p/net-snmp/bugs/2956/
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/net-snmp/+bug/1877027
+Reviewed-By: Sergio Durigan Junior <sergio.durigan@canonical.com>
+---
+ include/net-snmp/library/snmpusm.h | 17 +----------------
+ snmplib/snmpusm.c                  | 16 ++++++++++++++++
+ 2 files changed, 17 insertions(+), 16 deletions(-)
+
+diff --git a/include/net-snmp/library/snmpusm.h b/include/net-snmp/library/snmpusm.h
+index 3f60787..49061d8 100644
+--- a/include/net-snmp/library/snmpusm.h
++++ b/include/net-snmp/library/snmpusm.h
+@@ -42,22 +42,7 @@ extern          "C" {
+     /*
+      * Structures.
+      */
+-    struct usmStateReference {
+-        char           *usr_name;
+-        size_t          usr_name_length;
+-        u_char         *usr_engine_id;
+-        size_t          usr_engine_id_length;
+-        oid            *usr_auth_protocol;
+-        size_t          usr_auth_protocol_length;
+-        u_char         *usr_auth_key;
+-        size_t          usr_auth_key_length;
+-        oid            *usr_priv_protocol;
+-        size_t          usr_priv_protocol_length;
+-        u_char         *usr_priv_key;
+-        size_t          usr_priv_key_length;
+-        u_int           usr_sec_level;
+-    };
+-
++    struct usmStateReference;
+ 
+     /*
+      * struct usmUser: a structure to represent a given user in a list 
+diff --git a/snmplib/snmpusm.c b/snmplib/snmpusm.c
+index 0853e8d..ec2074c 100644
+--- a/snmplib/snmpusm.c
++++ b/snmplib/snmpusm.c
+@@ -84,6 +84,22 @@ netsnmp_feature_child_of(usm_support, usm_all)
+ 
+ netsnmp_feature_require(usm_support)
+ 
++struct usmStateReference {
++    char           *usr_name;
++    size_t          usr_name_length;
++    u_char         *usr_engine_id;
++    size_t          usr_engine_id_length;
++    oid            *usr_auth_protocol;
++    size_t          usr_auth_protocol_length;
++    u_char         *usr_auth_key;
++    size_t          usr_auth_key_length;
++    oid            *usr_priv_protocol;
++    size_t          usr_priv_protocol_length;
++    u_char         *usr_priv_key;
++    size_t          usr_priv_key_length;
++    u_int           usr_sec_level;
++};
++
+ oid    usmNoAuthProtocol[10] = { NETSNMP_USMAUTH_BASE_OID,
+                                  NETSNMP_USMAUTH_NOAUTH };
+ #ifndef NETSNMP_DISABLE_MD5

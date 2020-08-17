@@ -1,0 +1,36 @@
+HOST-MIB: Fix a recently introduced bug
+
+Fixes: cf41e6e91015 ("HOST-MIB: Skip autofs entries")
+
+Note: this bug was not introduced by Josef but by me.
+
+Description: HOST-MIB: Fix a recently introduced bug
+Author: Bart Van Assche <bvanassche@acm.org>
+Origin: upstream, https://github.com/net-snmp/net-snmp/commit/a0df31c18c
+Applied-Upstream: v5.8.rc4-386-ga0df31c18 (drop after v5.8.1.pre1)
+Bug: https://sourceforge.net/p/net-snmp/bugs/2968/
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=935325
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/1835818
+Reviewed-by: Rafael David Tinoco <rafaeldtinoco@ubuntu.com>
+Last-Update: 2019-12-16
+
+---
+ agent/mibgroup/host/hrh_storage.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agent/mibgroup/host/hrh_storage.c b/agent/mibgroup/host/hrh_storage.c
+index 6f8ff6c53..c7c53922a 100644
+--- a/agent/mibgroup/host/hrh_storage.c
++++ b/agent/mibgroup/host/hrh_storage.c
+@@ -371,7 +371,7 @@ really_try_next:
+                                    NETSNMP_DS_AGENT_SKIPNFSINHOSTRESOURCES) &&
+             Check_HR_FileSys_NFS())
+             return NULL;
+-        if (Check_HR_FileSys_AutoFs())
++        if (HRFS_entry && Check_HR_FileSys_AutoFs())
+             return NULL;
+         if (store_idx <= NETSNMP_MEM_TYPE_MAX ) {
+ 	    mem = (netsnmp_memory_info*)ptr;
+-- 
+2.24.0
+

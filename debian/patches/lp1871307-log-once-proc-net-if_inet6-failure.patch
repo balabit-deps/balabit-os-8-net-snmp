@@ -1,0 +1,27 @@
+Description: MIB-II: Only log once that opening /proc/net/if_inet6 failed
+
+If IPv6 has been disabled (ipv6.disable=1) then opening /proc/net/if_inet6
+fails. Only log this once instead of thousand of times a day.
+
+Reported-by: Fif <lefif@users.sourceforge.net>
+
+Origin: upstream, https://sourceforge.net/p/net-snmp/code/ci/cd09fd8252
+Bug: https://sourceforge.net/p/net-snmp/bugs/2903/
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/1871307
+Reviewed-by: Rafael David Tinoco <rafaeldtinoco@ubuntu.com>
+Last-Update: 2020-04-09
+---
+ agent/mibgroup/ip-mib/data_access/ipaddress_linux.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/agent/mibgroup/ip-mib/data_access/ipaddress_linux.c
++++ b/agent/mibgroup/ip-mib/data_access/ipaddress_linux.c
+@@ -234,7 +234,7 @@
+ 
+ #define PROCFILE "/proc/net/if_inet6"
+     if (!(in = fopen(PROCFILE, "r"))) {
+-        snmp_log_perror("ipaddress_linux: could not open " PROCFILE);
++        NETSNMP_LOGONCE((LOG_ERR, "ipaddress_linux: could not open " PROCFILE));
+         return -2;
+     }
+ 

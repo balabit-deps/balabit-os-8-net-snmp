@@ -1,0 +1,36 @@
+Description: HOST-MIB, hr_filesys: Fix Check_HR_FileSys_AutoFs()
+    
+ On Linux getmntent() is available but getfsstat() not. Hence remove #if
+ HAVE_GETFSSTAT from around the HRFS_type check.
+
+ See also https://sourceforge.net/p/net-snmp/patches/1350/.
+ Fixes: cf41e6e91015 ("HOST-MIB: Skip autofs entries").
+Author: Bart Van Assche <bvanassche@acm.org>
+Origin: upstream, https://github.com/net-snmp/net-snmp/commit/bcb1a6b8afc444bbcd099a195e08f0b01cbc8f6b
+Bug: https://sourceforge.net/p/net-snmp/patches/1350/
+Bug-Ubuntu: https://launchpad.net/bugs/1843036
+Index: net-snmp-5.7.3+dfsg/agent/mibgroup/host/hr_filesys.c
+===================================================================
+--- net-snmp-5.7.3+dfsg.orig/agent/mibgroup/host/hr_filesys.c
++++ net-snmp-5.7.3+dfsg/agent/mibgroup/host/hr_filesys.c
+@@ -846,18 +846,8 @@ Check_HR_FileSys_NFS (void)
+ int
+ Check_HR_FileSys_AutoFs(void)
+ {
+-#if HAVE_GETFSSTAT
+-    if (HRFS_entry->HRFS_type != NULL && 
+-#if defined(MNTTYPE_AUTOFS)
+-        !strcmp(HRFS_entry->HRFS_type, MNTTYPE_AUTOFS)
+-#else
+-        !strcmp(HRFS_entry->HRFS_type, "autofs")
+-#endif
+-        )
+-#endif /* HAVE_GETFSSTAT */
+-        return 1;  /* AUTOFS */
+-
+-    return 0; /* no AUTOFS */
++    return HRFS_entry->HRFS_type &&
++        strcmp(HRFS_entry->HRFS_type, MNTTYPE_AUTOFS) == 0;
+ }
+ 
+ void
