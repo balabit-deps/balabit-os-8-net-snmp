@@ -1,3 +1,18 @@
+net-snmp (5.8+dfsg-2ubuntu2.4) focal-security; urgency=medium
+
+  * SECURITY UPDATE: Multiple security issus
+    - debian/patches/CVE-2022-248xx-1.patch: fix bounds checking in
+      NET-SNMP-AGENT-MIB, NET-SNMP-VACM-MIB, SNMP-VIEW-BASED-ACM-MIB,
+      SNMP-USER-BASED-SM-MIB in  agent/mibgroup/agent/nsLogging.c,
+      agent/mibgroup/agent/nsVacmAccessTable.c,
+      agent/mibgroup/mibII/vacm_vars.c, agent/mibgroup/snmpv3/usmUser.
+    - debian/patches/CVE-2022-248xx-2.patch: recover SET status from
+      delegated request in agent/snmp_agent.c.
+    - CVE-2022-24805, CVE-2022-24806, CVE-2022-24807, CVE-2022-24808,
+      CVE-2022-24809, CVE-2022-24810
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Mon, 25 Jul 2022 14:22:42 -0400
+
 net-snmp (5.8+dfsg-2ubuntu2.3) focal-security; urgency=medium
 
   * SECURITY UPDATE: Elevation of privileges - symlink handling

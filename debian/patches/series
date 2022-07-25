@@ -45,3 +45,5 @@ introduce-refcount-usmStateReference.patch
 move-free-securityStateRef-into-snmp-free-pdu.patch
 CVE-2020-15861.patch
 CVE-2020-15862.patch
+CVE-2022-248xx-1.patch
+CVE-2022-248xx-2.patch
