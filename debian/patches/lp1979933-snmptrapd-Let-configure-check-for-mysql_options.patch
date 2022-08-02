@@ -1,0 +1,149 @@
+commit 011342d8e453b9e0585bf77f659d80c648df8c9f
+Author: Bart Van Assche <bvanassche@acm.org>
+Date: Sat, 18 Aug 2018 09:28:14 -0700
+Description: snmptrapd: Let configure check for mysql_options()
+ Let configure check for mysql_options() instead of using mysql_options()
+ depending on the MySQL version. Only call load_defaults() or
+ my_load_defaults() if mysql_options() is not available. Parse not_argv[]
+ only if mysql_options() is not available. This last change fixes
+ Coverity ID 266336 ("logically dead code").
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/1979933
+Origin: backport, https://github.com/net-snmp/net-snmp/commit/011342d8e453b9e0585bf77f659d80c648df8c9f
+Last-Update: 2022-06-23
+
+Index: net-snmp-5.8+dfsg/apps/snmptrapd_sql.c
+===================================================================
+--- net-snmp-5.8+dfsg.orig/apps/snmptrapd_sql.c	2022-08-02 15:55:22.550026042 +1200
++++ net-snmp-5.8+dfsg/apps/snmptrapd_sql.c	2022-08-02 15:55:22.542026016 +1200
+@@ -421,9 +421,6 @@
+ int
+ netsnmp_mysql_init(void)
+ {
+-    int not_argc = 0, i;
+-    char *not_args[] = { NULL };
+-    char **not_argv = not_args;
+     netsnmp_trapd_handler *traph;
+ 
+     DEBUGMSGTL(("sql:init","called\n"));
+@@ -450,14 +447,22 @@
+     my_init();
+ #endif
+ 
++#if !defined(HAVE_MYSQL_OPTIONS)
++    {
++    int not_argc = 0, i;
++    char *not_args[] = { NULL };
++    char **not_argv = not_args;
++
+     /** load .my.cnf values */
+ #if HAVE_MY_LOAD_DEFAULTS
+     my_load_defaults ("my", _sql.groups, &not_argc, &not_argv, 0);
+ #elif defined(HAVE_LOAD_DEFAULTS)
+     load_defaults ("my", _sql.groups, &not_argc, &not_argv);
++#else
++#error Neither load_defaults() nor mysql_options() are available.
+ #endif
+ 
+-    for(i=0; i < not_argc; ++i) {
++    for (i = 0; i < not_argc; ++i) {
+         if (NULL == not_argv[i])
+             continue;
+         if (strncmp(not_argv[i],"--password=",11) == 0)
+@@ -475,6 +480,8 @@
+         else
+             snmp_log(LOG_WARNING, "unknown argument[%d] %s\n", i, not_argv[i]);
+     }
++    }
++#endif /* !defined(HAVE_MYSQL_OPTIONS) */
+ 
+     /** init bind structures */
+     memset(_tbind, 0x0, sizeof(_tbind));
+@@ -554,7 +561,7 @@
+         return -1;
+     }
+ 
+-#if MYSQL_VERSION_ID >= 100000
++#if HAVE_MYSQL_OPTIONS
+     mysql_options(_sql.conn, MYSQL_READ_DEFAULT_GROUP, "snmptrapd");
+ #endif
+ 
+Index: net-snmp-5.8+dfsg/configure
+===================================================================
+--- net-snmp-5.8+dfsg.orig/configure	2022-08-02 15:55:22.550026042 +1200
++++ net-snmp-5.8+dfsg/configure	2022-08-02 15:55:22.546026029 +1200
+@@ -25214,19 +25214,17 @@
+ fi
+ rm -f core conftest.err conftest.$ac_objext \
+     conftest$ac_exeext conftest.$ac_ext
+-  ac_fn_c_check_func "$LINENO" "mysql_init" "ac_cv_func_mysql_init"
+-if test "x$ac_cv_func_mysql_init" = xyes; then :
+-
+-$as_echo "#define HAVE_MYSQL_INIT 1" >>confdefs.h
+-
+-fi
+-
+-  ac_fn_c_check_func "$LINENO" "load_defaults" "ac_cv_func_load_defaults"
+-if test "x$ac_cv_func_load_defaults" = xyes; then :
+-
+-$as_echo "#define HAVE_LOAD_DEFAULTS 1" >>confdefs.h
++  for ac_func in load_defaults mysql_init mysql_options
++do :
++  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
++ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
++if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
++  cat >>confdefs.h <<_ACEOF
++#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
++_ACEOF
+ 
+ fi
++done
+ 
+   CPPFLAGS="${_cppflags}"
+   LIBS="${_libs}"
+Index: net-snmp-5.8+dfsg/configure.d/config_os_libs2
+===================================================================
+--- net-snmp-5.8+dfsg.orig/configure.d/config_os_libs2	2022-08-02 15:55:22.550026042 +1200
++++ net-snmp-5.8+dfsg/configure.d/config_os_libs2	2022-08-02 15:55:22.546026029 +1200
+@@ -563,14 +563,7 @@
+        AC_DEFINE([HAVE_MY_LOAD_DEFAULTS], 1,
+                  [Define if having my_load_defaults()])],
+       [AC_MSG_RESULT(no)])
+-  AC_CHECK_FUNC(
+-    [mysql_init],
+-    AC_DEFINE([HAVE_MYSQL_INIT], 1,
+-              [Define if mysql_init() is available in libmysqlclient]))
+-  AC_CHECK_FUNC(
+-    [load_defaults],
+-    AC_DEFINE([HAVE_LOAD_DEFAULTS], 1,
+-              [Define if load_defaults() is available in libmysqlclient]))
++  AC_CHECK_FUNCS([load_defaults mysql_init mysql_options])
+   CPPFLAGS="${_cppflags}"
+   LIBS="${_libs}"
+   AC_MSG_CACHE_ADD(MYSQL Trap Logging:         enabled)
+Index: net-snmp-5.8+dfsg/include/net-snmp/net-snmp-config.h.in
+===================================================================
+--- net-snmp-5.8+dfsg.orig/include/net-snmp/net-snmp-config.h.in	2022-08-02 15:55:22.550026042 +1200
++++ net-snmp-5.8+dfsg/include/net-snmp/net-snmp-config.h.in	2022-08-02 15:55:22.546026029 +1200
+@@ -462,7 +462,7 @@
+ /* Define to 1 if you have the <linux/tasks.h> header file. */
+ #undef HAVE_LINUX_TASKS_H
+ 
+-/* Define if load_defaults() is available in libmysqlclient */
++/* Define to 1 if you have the `load_defaults' function. */
+ #undef HAVE_LOAD_DEFAULTS
+ 
+ /* Define to 1 if you have the <locale.h> header file. */
+@@ -513,9 +513,12 @@
+ /* Define to 1 if you have the <mtab.h> header file. */
+ #undef HAVE_MTAB_H
+ 
+-/* Define if mysql_init() is available in libmysqlclient */
++/* Define to 1 if you have the `mysql_init' function. */
+ #undef HAVE_MYSQL_INIT
+ 
++/* Define to 1 if you have the `mysql_options' function. */
++#undef HAVE_MYSQL_OPTIONS
++
+ /* Define if MY_INIT() is availabe in libmysqlclient */
+ #undef HAVE_MY_INIT
+ 
