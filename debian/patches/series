@@ -48,3 +48,6 @@ CVE-2020-15862.patch
 CVE-2022-248xx-1.patch
 CVE-2022-248xx-2.patch
 lp1979933-snmptrapd-Let-configure-check-for-mysql_options.patch
+CVE-2022-4479x-1.patch
+CVE-2022-4479x-2.patch
+CVE-2022-4479x-3.patch

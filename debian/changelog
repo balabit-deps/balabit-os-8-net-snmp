@@ -1,3 +1,17 @@
+net-snmp (5.8+dfsg-2ubuntu2.6) focal-security; urgency=medium
+
+  * SECURITY UPDATE: DoS via null pointer exception issues
+    - debian/patches/CVE-2022-4479x-1.patch: disallow SET with NULL varbind
+      in agent/snmp_agent.c.
+    - debian/patches/CVE-2022-4479x-2.patch: allow SET with NULL varbind
+      for testing in apps/snmpset.c.
+    - debian/patches/CVE-2022-4479x-3.patch: add test for NULL varbind set
+      in testing/fulltests/default/T0142snmpv2csetnull_simple.
+    - CVE-2022-44792
+    - CVE-2022-44793
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Fri, 06 Jan 2023 11:07:55 -0500
+
 net-snmp (5.8+dfsg-2ubuntu2.5) focal; urgency=medium
 
   * Fix segmentation fault when attempting to initialise mysql
