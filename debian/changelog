@@ -1,3 +1,12 @@
+net-snmp (5.8+dfsg-2ubuntu2.7) focal; urgency=medium
+
+  * Fix snmptrapd reconnection issue after hitting MySQL wait_timeout
+    (LP: #1999711)
+    - d/p/snmptrapd-mysql-reconnection-after-hitting-wait_timeout.patch
+    - d/p/snmptrapd-mysql-fix-build-error.patch
+
+ -- Chengen Du <chengen.du@canonical.com>  Fri, 17 Feb 2023 03:05:10 +0000
+
 net-snmp (5.8+dfsg-2ubuntu2.6) focal-security; urgency=medium
 
   * SECURITY UPDATE: DoS via null pointer exception issues
