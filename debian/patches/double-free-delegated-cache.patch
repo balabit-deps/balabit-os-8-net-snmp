@@ -1,0 +1,33 @@
+commit f3e80746fde826cf4665fb959bda78cce061c883
+Author: Bart Van Assche <bvanassche@acm.org>
+Date:   Mon Aug 5 20:15:37 2019 -0700
+
+    AgentX: Fix a use-after-free
+    
+    When calling snmp_async_send(), the callback function is called whether or
+    not sending succeeds. Since the agentx_got_response() callback function
+    frees the cache unconditionally, calling netsnmp_free_delegated_cache()
+    explicitly after snmp_async_send() is wrong.
+    
+    See also https://sourceforge.net/p/net-snmp/bugs/2943/.
+    
+    Fixes: f9304c83f762 ("CHANGES: PATCH 1633670: fixed snmpd crashing when an AgentX subagent disconnect in the middle of processing of a request.") # v5.8.
+
+Origin: upstream, https://github.com/net-snmp/net-snmp/commit/f3e80746fde826cf4665fb959bda78cce061c883
+Bug: https://sourceforge.net/p/net-snmp/bugs/2943/
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/net-snmp/+bug/2012926
+Applied-Upstream: v5.8.1.pre1
+Last-Update: 2023-06-16
+diff --git a/agent/mibgroup/agentx/master.c b/agent/mibgroup/agentx/master.c
+index e3ff8aecb3..a9c29da783 100644
+--- a/agent/mibgroup/agentx/master.c
++++ b/agent/mibgroup/agentx/master.c
+@@ -616,8 +616,6 @@ agentx_master_handler(netsnmp_mib_handler *handler,
+     result = snmp_async_send(ax_session, pdu, agentx_got_response, cb_data);
+     if (result == 0) {
+         snmp_free_pdu(pdu);
+-        if (cb_data)
+-            netsnmp_free_delegated_cache((netsnmp_delegated_cache*) cb_data);
+     }
+ 
+     return SNMP_ERR_NOERROR;

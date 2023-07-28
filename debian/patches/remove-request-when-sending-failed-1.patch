@@ -1,0 +1,68 @@
+commit 408c8919e36feb4e9c1024e74d3b8c77454d89a0
+Author: Bart Van Assche <bvanassche@acm.org>
+Date:   Sun Apr 14 18:57:17 2019 -0700
+
+    snmplib: Introduce the function remove_request()
+    
+    This patch does not change any functionality.
+
+Origin: upstream, https://github.com/net-snmp/net-snmp/commit/408c8919e36feb4e9c1024e74d3b8c77454d89a0
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/net-snmp/+bug/2012926
+Applied-Upstream: 5.9
+Last-Update: 2023-07-28
+
+diff --git a/snmplib/snmp_api.c b/snmplib/snmp_api.c
+index 321a48f1b3..768d10f348 100644
+--- a/snmplib/snmp_api.c
++++ b/snmplib/snmp_api.c
+@@ -5654,6 +5654,20 @@ _sess_process_packet_parse_pdu(void *sessp, netsnmp_session * sp,
+   return pdu;
+ }
+ 
++/* Remove request @rp from session @isp. @orp is the request before @rp. */
++static void
++remove_request(struct snmp_internal_session *isp,
++               netsnmp_request_list *orp, netsnmp_request_list *rp)
++{
++    if (orp)
++        orp->next_request = rp->next_request;
++    else
++        isp->requests = rp->next_request;
++    if (isp->requestsEnd == rp)
++        isp->requestsEnd = orp;
++    snmp_free_pdu(rp->pdu);
++}
++
+ /*
+  * This function processes a PDU and calls the relevant callbacks.
+  */
+@@ -5789,13 +5803,7 @@ _sess_process_packet_handle_pdu(void *sessp, netsnmp_session * sp,
+ 	/*
+ 	 * Successful, so delete request.  
+ 	 */
+-	if (orp)
+-	  orp->next_request = rp->next_request;
+-        else
+-	  isp->requests = rp->next_request;
+-        if (isp->requestsEnd == rp)
+-	  isp->requestsEnd = orp;
+-	snmp_free_pdu(rp->pdu);
++	remove_request(isp, orp, rp);
+ 	free(rp);
+ 	/*
+ 	 * There shouldn't be any more requests with the same reqid.  
+@@ -6824,13 +6832,7 @@ snmp_sess_timeout(void *sessp)
+                     callback(NETSNMP_CALLBACK_OP_TIMED_OUT, sp,
+                              rp->pdu->reqid, rp->pdu, magic);
+                 }
+-                if (orp)
+-                    orp->next_request = rp->next_request;
+-                else
+-                    isp->requests = rp->next_request;
+-                if (isp->requestsEnd == rp)
+-                    isp->requestsEnd = orp;
+-                snmp_free_pdu(rp->pdu);
++                remove_request(isp, orp, rp);
+                 freeme = rp;
+                 continue;       /* don't update orp below */
+             } else {

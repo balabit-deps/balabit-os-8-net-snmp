@@ -1,0 +1,40 @@
+commit 7f88b06bf0f4140bc03cabacd35eaeffdf21d722
+Author: Anders Wallin <wallinux@gmail.com>
+Date:   Sun Apr 7 18:31:16 2019 -0400
+
+    agentx/master: Return when NETSNMP_CALLBACK_OP_RESEND is set to the callback
+    
+    snmpd is terminated abnormally due to the double free for the
+    request cache after the request is resend.
+    
+    That is because the callback for NETSNMP_CALLBACK_OP_RESEND isn't
+    cared and the cache is freed wrongly.
+    
+    Let's just return if NETSNMP_CALLBACK_OP_RESEND is set on the
+    callback.
+    
+    Fixes: b7b50bbac ("snmp_send callback updates")
+    
+    Signed-off-by: Anders Wallin <wallinux@gmail.com>
+
+Origin: upstream, https://github.com/net-snmp/net-snmp/commit/7f88b06bf0f4140bc03cabacd35eaeffdf21d722
+Bug: https://sourceforge.net/p/net-snmp/bugs/2943/
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/net-snmp/+bug/2012926
+Applied-Upstream: v5.8.1.pre1
+Last-Update: 2023-06-16
+diff --git a/agent/mibgroup/agentx/master.c b/agent/mibgroup/agentx/master.c
+index 99c4123ed3..b7a51dfef1 100644
+--- a/agent/mibgroup/agentx/master.c
++++ b/agent/mibgroup/agentx/master.c
+@@ -280,6 +280,11 @@ agentx_got_response(int operation,
+         netsnmp_free_delegated_cache(cache);
+         return 0;
+ 
++    case NETSNMP_CALLBACK_OP_RESEND:
++        DEBUGMSGTL(("agentx/master", "resend on session %8p req=0x%x\n",
++                    session, (unsigned)reqid));
++        return 0;
++
+     case NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE:
+         /*
+          * This session is alive 

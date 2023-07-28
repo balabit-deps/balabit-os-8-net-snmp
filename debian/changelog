@@ -1,3 +1,27 @@
+net-snmp (5.8+dfsg-2ubuntu2.9) focal; urgency=medium
+
+  * Fix "double free or corruption (fasttop)" crash (LP: #2012926):
+    - d/p/remove-request-when-sending-failed-1.patch: introduce
+      remove_request() function
+    - d/p/remove-request-when-sending-failed-2.patch: Remove the request
+      on the session when the sending is failed
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 28 Jul 2023 17:42:56 -0300
+
+net-snmp (5.8+dfsg-2ubuntu2.8) focal; urgency=medium
+
+  * Fix multiple double free() bugs (LP: #2012926):
+    - d/p/double-free-agentx_got_response.patch: fix double free of
+      delegated cache in agentx_got_response()
+    - d/p/double-free-failed-transport.patch: fix use-after-free in
+      agentx when the transport fails
+    - d/p/double-free-delegated-cache.patch: fix double free in the
+      delegated cache
+    - d/p/double-free-when-NETSNMP_CALLBACK_OP_RESEND-is-set.patch: fix
+      double free when NETSNMP_CALLBACK_OP_RESEND is set to the callback
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 16 Jun 2023 17:04:58 -0300
+
 net-snmp (5.8+dfsg-2ubuntu2.7) focal; urgency=medium
 
   * Fix snmptrapd reconnection issue after hitting MySQL wait_timeout

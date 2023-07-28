@@ -53,3 +53,9 @@ CVE-2022-4479x-2.patch
 CVE-2022-4479x-3.patch
 snmptrapd-mysql-reconnection-after-hitting-wait_timeout.patch
 snmptrapd-mysql-fix-build-error.patch
+double-free-agentx_got_response.patch
+double-free-failed-transport.patch
+double-free-delegated-cache.patch
+double-free-when-NETSNMP_CALLBACK_OP_RESEND-is-set.patch
+remove-request-when-sending-failed-1.patch
+remove-request-when-sending-failed-2.patch

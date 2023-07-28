@@ -1,0 +1,40 @@
+commit d73ebccfe45be49f70ab0a3f5dd298db78c99f6d
+Author: Bart Van Assche <bvanassche@acm.org>
+Date:   Thu May 16 13:48:03 2019 +0200
+
+    AgentX: Fix two use-after-free issues
+    
+    snmp_add_full() frees the transport if it fails. This was detected by Coverity.
+
+Origin: upstream, https://github.com/net-snmp/net-snmp/commit/d73ebccfe45be49f70ab0a3f5dd298db78c99f6d
+Bug: https://sourceforge.net/p/net-snmp/bugs/2943/
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/net-snmp/+bug/2012926
+Applied-Upstream: v5.8.1.pre1
+Last-Update: 2023-06-16
+diff --git a/agent/mibgroup/agentx/master.c b/agent/mibgroup/agentx/master.c
+index 93d562122c..e3ff8aecb3 100644
+--- a/agent/mibgroup/agentx/master.c
++++ b/agent/mibgroup/agentx/master.c
+@@ -185,6 +185,9 @@ real_init_master(void)
+             session =
+                 snmp_add_full(&sess, t, NULL, agentx_parse, NULL, NULL,
+                               agentx_realloc_build, agentx_check_packet, NULL);
++            /* snmp_add_full() frees 't' upon failure. */
++            if (!session)
++                t = NULL;
+         }
+         if (session == NULL) {
+             netsnmp_transport_free(t);
+diff --git a/agent/mibgroup/agentx/subagent.c b/agent/mibgroup/agentx/subagent.c
+index cf0bf62cf7..c11f56dd46 100644
+--- a/agent/mibgroup/agentx/subagent.c
++++ b/agent/mibgroup/agentx/subagent.c
+@@ -870,6 +870,8 @@ subagent_open_master_session(void)
+                       agentx_realloc_build, agentx_check_packet, NULL);
+ 
+     if (main_session == NULL) {
++        /* snmp_add_full() frees 't' upon failure. */
++        t = NULL;
+         if (!netsnmp_ds_get_boolean(NETSNMP_DS_APPLICATION_ID,
+                                     NETSNMP_DS_AGENT_NO_CONNECTION_WARNINGS)) {
+             char buf[1024];
